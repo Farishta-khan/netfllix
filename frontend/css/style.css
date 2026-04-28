@@ -332,10 +332,10 @@
             width: 100%;
             min-height: 500px;
             background: url('https://image.tmdb.org/t/p/original/p1F51Lvj3sMopG948F5HsBbl43C.jpg') ;
-            background-size: contain; /* Shows full image without zooming */
+            background-size: contain; 
             background-repeat: no-repeat;
             background-position: center;
-            background-color: #141414; /* Dark gray to fill the empty sides */
+            background-color: #141414; 
             z-index: 1;
             display: flex;
             align-items: flex-end;
