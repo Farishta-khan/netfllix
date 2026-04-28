@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Netflix - Watch TV Shows Online, Watch Movies Online</title>
+    <link rel="icon" href="https://assets.nflxext.com/us/ffe/siteui/common/icons/nfavicon.ico">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap">
+    <script src="js/app.js" defer></script>
+
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Auth Container (Modal) -->
+    <div class="auth-container" id="authContainer">
+        <button class="auth-close" onclick="closeAuthModal()">×</button>
+        <div class="auth-box">
+            <h1 id="authTitle">Sign In</h1>
+            <p class="error-message" id="errorMessage"></p>
+            <form id="authForm">
+                <input type="text" id="authName" placeholder="Name" style="display: none;">
+                <input type="email" id="authEmail" placeholder="Email or phone number" required>
+                <input type="password" id="authPassword" placeholder="Password" required>
+                <button type="submit" id="authButton">Sign In</button>
+            </form>
+<p class="auth-switch" id="authSwitch"></p>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div class="app-container" id="appContainer">
+        <!-- Navbar -->
+        <nav class="navbar" id="navbar">
+            <div class="nav-left">
+                <div class="logo" onclick="goHome()"></div>
+
+                <ul class="nav-links">
+                    <li><a href="#" class="active" onclick="showSection('home')">Home</a></li>
+                </ul>
+            </div>
+            <div class="nav-right">
+                <!-- Auth Buttons (shown when not logged in) -->
+                <div class="auth-buttons" id="authButtons">
+                    <button class="nav-signin-btn" onclick="showAuthModal()">Sign In</button>
+                </div>
+                
+                <!-- User Profile (shown when logged in) -->
+                <div class="user-profile" id="userProfile">
+                    <div class="search-box" id="searchBox">
+                        <input type="text" placeholder="Titles, people, genres" id="searchInput">
+                    </div>
+                    <span class="search-icon" onclick="toggleSearch()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                            <path d="M21.71 20.29L18 16.61A9 9 0 1 0 16.61 18l3.68 3.68a1 1 0 0 0 1.42 0 1 1 0 0 0 0-1.42zM11 18a7 7 0 1 1 7-7 7 7 0 0 1-7 7z"/>
+                        </svg>
+                    </span>
+                    <div class="notifications">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                            <path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
+                        </svg>
+                        <span class="notifications-badge">2</span>
+                    </div>
+                    <div class="profile-menu">
+                        <img src="https://i.pravatar.cc/150?img=3" alt="Profile" class="profile-avatar" id="profileAvatar">
+                        <div class="profile-dropdown">
+                            <a href="#">Account</a>
+                            <a href="#" onclick="logout()">Sign out of Netflix</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <div class="hero" id="hero">
+            <div class="hero-overlay"></div>
+            <div class="hero-content">
+                <h1 class="hero-title" id="heroTitle">Stranger Things</h1>
+                <div class="hero-info">
+                    <span class="hero-match">98% Match</span>
+                    <span class="hero-year">2016</span>
+                    <span class="hero-duration">4 Seasons</span>
+                    <span class="hero-rating">HD</span>
+                </div>
+                <p class="hero-description" id="heroDescription">When a young boy disappears, his mother, a police chief and his friends must confront terrifying supernatural forces in order to get him back.</p>
+                <div class="hero-buttons">
+                    <button class="hero-btn hero-btn-primary" onclick="playMovie()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="black">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                        Play
+                    </button>
+                    <button class="hero-btn hero-btn-secondary" onclick="showMovieDetail(1)">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                            <path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+                        </svg>
+                        More Info
+                    </button>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Content Sections -->
+        <div class="content-section" id="contentSection">
+            <!-- Dynamic content will be inserted here -->
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-links">
+                <a href="#">Audio Description</a>
+                <a href="#">Help Center</a>
+                <a href="#">Gift Cards</a>
+                <a href="#">Media Center</a>
+                <a href="#">Investor Relations</a>
+                <a href="#">Jobs</a>
+                <a href="#">Terms of Use</a>
+                <a href="#">Privacy</a>
+                <a href="#">Legal Notices</a>
+                <a href="#">Cookie Preferences</a>
+                <a href="#">Corporate Information</a>
+                <a href="#">Contact Us</a>
+            </div>
+            <div class="footer-service">
+                <a href="#" style="color: #808080;">Service Code</a>
+            </div>
+            <div class="footer-copyright">
+                © 1997-2024 Netflix, Inc.
+            </div>
+        </footer>
+    </div>
+
+    <!-- Movie Detail Modal -->
+    <div class="modal-overlay" id="movieModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">×</button>
+            <img src="" alt="" class="modal-image" id="modalImage">
+            <div class="modal-body">
+                <h1 class="modal-title" id="modalTitle">Movie Title</h1>
+                <div class="modal-meta">
+                    <span class="modal-rating" id="modalRating">98% Match</span>
+                    <span class="modal-year" id="modalYear">2024</span>
+                    <span class="modal-duration" id="modalDuration">2h 30m</span>
+                    <span class="modal-genre" id="modalGenre">Action</span>
+                </div>
+                <p class="modal-description" id="modalDescription">Movie description goes here.</p>
+                <p class="modal-cast" id="modalCast">Cast: Actor One, Actor Two, Actor Three</p>
+                <div class="modal-buttons">
+                    <button class="modal-btn modal-btn-play" onclick="playMovie()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="black">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                        Play
+                    </button>
+                    <button class="modal-btn modal-btn-info">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                            <path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+                        </svg>
+                        More Info
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</body>
+</html>
