@@ -7,7 +7,8 @@
         let isLogin = true;
         let currentUser = null;
         let allMovies = [];
-        let categories = ['Trending Now', 'Popular on Netflix', 'Action Movies', 'Comedy', 'Drama', 'Sci-Fi', 'Horror'];
+                let favoritesSet = new Set();
+                let categories = ['Trending Now', 'Popular on Netflix', 'Action Movies', 'Comedy', 'Drama', 'Sci-Fi', 'Horror'];
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
@@ -25,6 +26,8 @@
             }
             // Always show the app first - users can browse without signing in
             showApp();
+                // load favorites (after app shows)
+                setTimeout(() => loadFavorites(), 300);
         }
 
         // Setup Event Listeners
@@ -244,12 +247,21 @@ function showAuthModal(mode) {
 
                 document.getElementById('authButtons').style.display = 'none';
                 document.getElementById('userProfile').style.display = 'flex';
-            } else {
-                document.getElementById('authButtons').style.display = 'flex';
-                document.getElementById('userProfile').style.display = 'none';
-            }
-        });
-}
+
+                  // show user email/avatar
+                  const avatar = document.getElementById('profileAvatar');
+                  const profileName = document.getElementById('profileName');
+                  if (currentUser.email) {
+                      profileName.textContent = currentUser.email.split('@')[0];
+                  }
+                  avatar.src = `https://i.pravatar.cc/150?u=${encodeURIComponent(currentUser.email)}`;
+
+              } else {
+                  document.getElementById('authButtons').style.display = 'flex';
+                  document.getElementById('userProfile').style.display = 'none';
+              }
+          });
+  }
         // Movie Functions
         async function fetchMovies() {
             try {
@@ -372,17 +384,23 @@ function getSampleMovies() {
         }
 
 function createContentRow(title, movies) {
-    const limitedMovies = movies.slice(0, 5);
+    const limitedMovies = movies.slice(0, 8);
 
     let posters = limitedMovies.map(movie => `
-        <div class="poster-card" onclick="showMovieDetail(${movie.id})">
+        <div class="poster-card ${isFavorite(movie.id) ? 'favorited' : ''}" data-id="${movie.id}">
             <img src="${movie.image_url}" 
                  loading="lazy"
                  referrerpolicy="no-referrer"
                  onerror="this.src='https://via.placeholder.com/200x300?text=No+Image'"
-                 class="poster-image">
+                 class="poster-image" alt="${escapeHtml(movie.title)}">
             <div class="poster-overlay">
-                <div class="poster-title">${movie.title}</div>
+                <div class="overlay-buttons">
+                    <button class="play-btn" onclick="playMovie(${movie.id});event.stopPropagation();" aria-label="Play ${escapeHtml(movie.title)}">▶</button>
+                    <button class="fav-btn" onclick="toggleFavorite(${movie.id});event.stopPropagation();" aria-label="Toggle favorite">
+                        ${isFavorite(movie.id) ? '♥' : '♡'}
+                    </button>
+                </div>
+                <div class="poster-title">${escapeHtml(movie.title)}</div>
                 <div class="poster-info">
                     <span class="poster-match">${Math.round(movie.rating * 10)}% Match</span>
                     <span>${movie.release_year}</span>
@@ -403,6 +421,10 @@ function createContentRow(title, movies) {
             </div>
         </div>
     `;
+}
+
+function escapeHtml(s) {
+    return (s + '').replace(/[&<>"]/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; });
 }
         function updateHero(movie) {
                     // remember hero as selected movie for quick play
@@ -590,7 +612,8 @@ function addToMyList(movieId) {
             body: JSON.stringify({ movie_id: movieId })
         }).then(r => r.json()).then(data => {
             if (data.status === 'success') {
-                // optional: feedback
+                favoritesSet.add(movieId);
+                renderContent();
                 console.log('Added to My List (server)');
             } else {
                 console.warn('Could not add to My List', data.message);
@@ -604,6 +627,69 @@ function addToMyList(movieId) {
     if (!list.some(m => m.id === movieId)) {
         list.push(movie);
         localStorage.setItem('my_list', JSON.stringify(list));
+        favoritesSet.add(movieId);
+        renderContent();
+    }
+}
+
+function removeFromMyList(movieId) {
+    const token = localStorage.getItem('netflix_token');
+    if (token) {
+        fetch('../backend/favorites.php', {
+            method: 'DELETE',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ movie_id: movieId })
+        }).then(r => r.json()).then(data => {
+            if (data.status === 'success') {
+                favoritesSet.delete(movieId);
+                renderContent();
+            }
+        }).catch(err => console.warn('Remove favorite failed', err));
+        return;
+    }
+
+    // localStorage fallback
+    let list = JSON.parse(localStorage.getItem('my_list') || '[]');
+    list = list.filter(m => m.id !== movieId);
+    localStorage.setItem('my_list', JSON.stringify(list));
+    favoritesSet.delete(movieId);
+    renderContent();
+}
+
+function toggleFavorite(movieId) {
+    if (isFavorite(movieId)) {
+        removeFromMyList(movieId);
+    } else {
+        addToMyList(movieId);
+    }
+}
+
+function isFavorite(movieId) {
+    return favoritesSet.has(movieId);
+}
+
+function loadFavorites() {
+    favoritesSet = new Set();
+    const token = localStorage.getItem('netflix_token');
+    if (token) {
+        fetch('../backend/favorites.php', {
+            method: 'GET',
+            headers: { 'Authorization': 'Bearer ' + token }
+        }).then(r => r.json()).then(data => {
+            if (data.status === 'success') {
+                const ids = (data.data || []).map(m => m.id);
+                ids.forEach(id => favoritesSet.add(id));
+                renderContent();
+            }
+        }).catch(() => {
+            // ignore
+        });
+    } else {
+        const saved = JSON.parse(localStorage.getItem('my_list') || '[]');
+        saved.forEach(m => favoritesSet.add(m.id));
     }
 }
 
