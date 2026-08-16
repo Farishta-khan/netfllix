@@ -458,6 +458,69 @@
     z-index: 1;
 }
 
+/* Hero carousel controls */
+.hero-control {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(0,0,0,0.5);
+        color: white;
+        width: 48px;
+        height: 64px;
+        border: none;
+        border-radius: 4px;
+        font-size: 32px;
+        line-height: 1;
+        cursor: pointer;
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0.9;
+}
+
+.hero-prev { left: 16px; }
+.hero-next { right: 16px; }
+
+.hero-control:hover { background: rgba(0,0,0,0.7); }
+
+.hero-indicators {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 20px;
+        display: flex;
+        gap: 8px;
+        z-index: 5;
+}
+
+.hero-indicators button {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.25);
+        border: none;
+        cursor: pointer;
+}
+
+.hero-indicators button.active {
+        background: white;
+}
+
+/* Responsive adjustments for hero */
+@media (max-width: 900px) {
+        .hero-title { font-size: 36px; }
+        .hero-description { font-size: 14px; max-width: 90%; }
+        .hero-prev, .hero-next { width: 40px; height: 56px; font-size: 28px; }
+}
+
+@media (max-width: 480px) {
+        .hero { height: 60vh; min-height: 380px; }
+        .hero-content { padding-left: 20px; padding-bottom: 60px; }
+        .hero-title { font-size: 28px; }
+        .hero-buttons .hero-btn { padding: 10px 18px; font-size: 14px; }
+}
+
         /* Content Rows */
         .content-section {
             padding: 40px 4%;

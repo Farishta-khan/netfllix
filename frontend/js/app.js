@@ -10,6 +10,13 @@
                 let favoritesSet = new Set();
                 let categories = ['Trending Now', 'Popular on Netflix', 'Action Movies', 'Comedy', 'Drama', 'Sci-Fi', 'Horror'];
 
+// Hero carousel state
+let heroMovies = [];
+let heroIndex = 0;
+let heroTimer = null;
+const HERO_ROTATE_MS = 8000; // 8 seconds auto-rotate
+
+
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             checkAuth();
@@ -345,18 +352,26 @@ function getSampleMovies() {
 }
 
         function renderContent() {
-            // Update hero with first movie
-              if (allMovies.length > 0) {
-                let lastHero = localStorage.getItem('lastHeroId');
-                let randomMovie;
+            // Setup hero carousel with featured movies
+            if (allMovies.length > 0) {
+                // pick top 6 (or fewer) as featured
+                heroMovies = allMovies.slice(0, Math.min(6, allMovies.length));
 
-                do {
-                    const randomIndex = Math.floor(Math.random() * allMovies.length);
-                    randomMovie = allMovies[randomIndex];
-                } while (randomMovie.id == lastHero && allMovies.length > 1);
+                // try to resume last hero index if available
+                let lastHeroId = localStorage.getItem('lastHeroId');
+                let startIndex = 0;
+                if (lastHeroId) {
+                    const idx = heroMovies.findIndex(m => String(m.id) === String(lastHeroId));
+                    if (idx >= 0) startIndex = idx;
+                }
 
-                updateHero(randomMovie);
-                localStorage.setItem('lastHeroId', randomMovie.id);
+                heroIndex = startIndex;
+                updateHero(heroMovies[heroIndex]);
+                localStorage.setItem('lastHeroId', heroMovies[heroIndex].id);
+
+                // start auto-rotate
+                stopHeroAutoRotate();
+                startHeroAutoRotate();
             }
             // Render content rows
             const contentSection = document.getElementById('contentSection');
@@ -428,11 +443,58 @@ function escapeHtml(s) {
 }
         function updateHero(movie) {
                     // remember hero as selected movie for quick play
-                    window.selectedMovieId = movie.id;
-                    document.getElementById('heroTitle').textContent = movie.title;
-                    document.getElementById('heroDescription').textContent = movie.description;
-                    document.getElementById('hero').style.background = `url('${movie.image_url}') center/cover`;
-                }
+                            if (!movie) return;
+                            window.selectedMovieId = movie.id;
+                            document.getElementById('heroTitle').textContent = movie.title;
+                            document.getElementById('heroDescription').textContent = movie.description || '';
+                            document.getElementById('hero').style.background = `url('${movie.image_url}') center/cover`;
+
+                            // update indicators
+                            try {
+                                const indicators = document.getElementById('heroIndicators');
+                                if (indicators) {
+                                    indicators.innerHTML = '';
+                                    (heroMovies || []).forEach((m, idx) => {
+                                        const btn = document.createElement('button');
+                                        btn.className = idx === heroIndex ? 'active' : '';
+                                        btn.setAttribute('aria-label', m.title);
+                                        btn.onclick = (e) => { e.stopPropagation(); heroIndex = idx; updateHero(heroMovies[heroIndex]); localStorage.setItem('lastHeroId', heroMovies[heroIndex].id); stopHeroAutoRotate(); startHeroAutoRotate(); };
+                                        indicators.appendChild(btn);
+                                    });
+                                }
+                            } catch (e) {
+                                // ignore indicator errors
+                            }
+                        }
+
+        // Hero carousel controls
+        function nextHero() {
+            if (!heroMovies || heroMovies.length === 0) return;
+            heroIndex = (heroIndex + 1) % heroMovies.length;
+            updateHero(heroMovies[heroIndex]);
+            localStorage.setItem('lastHeroId', heroMovies[heroIndex].id);
+        }
+
+        function prevHero() {
+            if (!heroMovies || heroMovies.length === 0) return;
+            heroIndex = (heroIndex - 1 + heroMovies.length) % heroMovies.length;
+            updateHero(heroMovies[heroIndex]);
+            localStorage.setItem('lastHeroId', heroMovies[heroIndex].id);
+        }
+
+        function startHeroAutoRotate() {
+            stopHeroAutoRotate();
+            heroTimer = setInterval(() => {
+                nextHero();
+            }, HERO_ROTATE_MS);
+        }
+
+        function stopHeroAutoRotate() {
+            if (heroTimer) {
+                clearInterval(heroTimer);
+                heroTimer = null;
+            }
+        }
 
 function showMovieDetail(id) {
     const movie = allMovies.find(m => m.id === id);

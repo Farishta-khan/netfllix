@@ -81,6 +81,12 @@
         <!-- Hero Section -->
         <div class="hero" id="hero">
             <div class="hero-overlay"></div>
+
+            <!-- carousel controls -->
+            <button class="hero-control hero-prev" aria-label="Previous" onclick="prevHero()">‹</button>
+            <button class="hero-control hero-next" aria-label="Next" onclick="nextHero()">›</button>
+            <div class="hero-indicators" id="heroIndicators" aria-hidden="true"></div>
+
             <div class="hero-content">
                 <h1 class="hero-title" id="heroTitle">Stranger Things</h1>
                 <div class="hero-info">
@@ -97,7 +103,7 @@
                         </svg>
                         Play
                     </button>
-                    <button class="hero-btn hero-btn-secondary" onclick="showMovieDetail(1)">
+                    <button class="hero-btn hero-btn-secondary" onclick="showMovieDetail(window.selectedMovieId)">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
                             <path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
                         </svg>
