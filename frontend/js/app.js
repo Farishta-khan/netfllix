@@ -412,6 +412,9 @@ function getSampleMovies() {
                 updateHero(heroMovies[heroIndex]);
                 localStorage.setItem('lastHeroId', heroMovies[heroIndex].id);
 
+                // populate collage background
+                try { populateHeroCollage(allMovies); } catch(e) {}
+
                 // start auto-rotate
                 stopHeroAutoRotate();
                 startHeroAutoRotate();
@@ -928,6 +931,30 @@ function hideSnapshotPreview(el) {
         const container = document.getElementById('hover-snapshot-container');
         if (container) { try { container.remove(); } catch(e) {} }
     } catch(e) {}
+}
+
+// Create hero collage from movie posters for background mosaic
+function populateHeroCollage(movies) {
+    const container = document.getElementById('heroCollage');
+    if (!container) return;
+    container.innerHTML = '';
+    const count = Math.min(movies.length, 24);
+    for (let i = 0; i < count; i++) {
+        const img = document.createElement('img');
+        img.src = movies[i].image_url || movies[i].poster || '';
+        img.alt = movies[i].title || '';
+        // small random rotation for organic look
+        const rot = (Math.random() - 0.5) * 8; // -4deg..4deg
+        img.style.transform = `rotate(${rot}deg)`;
+        container.appendChild(img);
+    }
+}
+
+function handleHeroCTA(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const email = document.getElementById('heroEmail')?.value;
+    if (email) localStorage.setItem('prefill_email', email);
+    showAuthModal();
 }
 
 // Settings modal + autoplay preview toggle
