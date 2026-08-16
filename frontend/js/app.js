@@ -65,7 +65,7 @@ const HERO_ROTATE_MS = 8000; // 8 seconds auto-rotate
             document.getElementById('authForm').addEventListener('submit', handleAuth);
             document.getElementById('authSwitch').addEventListener('click', toggleAuthMode);
             
-            // Navbar Scroll
+            // Navbar Scroll + hero parallax
             window.addEventListener('scroll', () => {
                 const navbar = document.getElementById('navbar');
                 if (window.scrollY > 50) {
@@ -73,6 +73,21 @@ const HERO_ROTATE_MS = 8000; // 8 seconds auto-rotate
                 } else {
                     navbar.classList.remove('scrolled');
                 }
+                // hero parallax
+                try {
+                    const heroBg = document.getElementById('heroBg');
+                    const title = document.getElementById('heroTitle');
+                    const s = window.scrollY;
+                    if (heroBg) {
+                        const translate = Math.min(80, s * 0.2);
+                        const scale = 1 + Math.min(s / 5000, 0.06);
+                        heroBg.style.transform = `translateY(${translate}px) scale(${scale})`;
+                    }
+                    if (title) {
+                        title.style.transform = `translateY(${Math.min(30, s * 0.06)}px)`;
+                        title.style.opacity = `${Math.max(0.6, 1 - s/600)}`;
+                    }
+                } catch(e){}
             });
 
             // Search
@@ -432,13 +447,19 @@ function getSampleMovies() {
 
 function createContentRow(title, movies) {
     const limitedMovies = movies.slice(0, 8);
+    // load progress map from localStorage to show mini progress
+    let progressArr = [];
+    try { progressArr = JSON.parse(localStorage.getItem(WATCH_PROGRESS_KEY) || '[]'); } catch(e) { progressArr = []; }
 
-    let posters = limitedMovies.map(movie => `
-        <div class="poster-card ${isFavorite(movie.id) ? 'favorited' : ''}" data-id="${movie.id}" tabindex="0" onmouseenter="showTrailerPreview(${movie.id}, this)" onmouseleave="hideTrailerPreview(this)" onclick="showMovieDetail(${movie.id})">
+    let posters = limitedMovies.map(movie => {
+        const prog = (progressArr.find(p => p.id === movie.id) || {progress:0}).progress || 0;
+        const progressPct = Math.round(prog * 100);
+        return `
+        <div class="poster-card ${isFavorite(movie.id) ? 'favorited' : ''}" data-id="${movie.id}" tabindex="0" onmouseenter="showSnapshotPreview(${movie.id}, this)" onmouseleave="hideSnapshotPreview(this)" onclick="showMovieDetail(${movie.id})">
             <img src="${movie.image_url}" 
                  loading="lazy"
                  referrerpolicy="no-referrer"
-                 onerror="this.src='https://via.placeholder.com/200x300?text=No+Image'"
+                 onerror="this.src='https://via.placeholder.com/220x330?text=No+Image'"
                  class="poster-image" alt="${escapeHtml(movie.title)}">
             <div class="poster-overlay">
                 <div class="overlay-buttons">
@@ -447,6 +468,12 @@ function createContentRow(title, movies) {
                         ${isFavorite(movie.id) ? '♥' : '♡'}
                     </button>
                 </div>
+
+                <div class="mini-info">
+                    <div class="mini-meta"><span class="mini-year">${movie.release_year}</span> • <span class="mini-duration">${movie.duration}</span></div>
+                    <div class="mini-progress"><div class="mini-progress-fill" style="width:${progressPct}%"></div></div>
+                </div>
+
                 <div class="poster-title">${escapeHtml(movie.title)}</div>
                 <div class="poster-info">
                     <span class="poster-match">${Math.round(movie.rating * 10)}% Match</span>
@@ -455,7 +482,8 @@ function createContentRow(title, movies) {
                 </div>
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
 
     return `
         <div class="content-row">
@@ -836,35 +864,70 @@ function isFavorite(movieId) {
     return favoritesSet.has(movieId);
 }
 
-// Trailer preview on hover
-function showTrailerPreview(movieId, el) {
+// Snapshot preview on hover (small player positioned near the poster)
+function showSnapshotPreview(movieId, el) {
     try {
         const movie = allMovies.find(m => m.id === movieId);
         if (!movie) return;
-        // respect user setting for autoplay previews
         const autoplay = localStorage.getItem('autoplay_preview');
         if (autoplay === 'false') return;
-        // avoid duplicating
-        if (el.querySelector('.poster-trailer')) return;
+
+        // create container if not exists
+        let container = document.getElementById('hover-snapshot-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'hover-snapshot-container';
+            container.style.position = 'fixed';
+            container.style.zIndex = 2500;
+            container.style.pointerEvents = 'none';
+            document.body.appendChild(container);
+        }
+
+        // clear existing
+        container.innerHTML = '';
+
         const video = document.createElement('video');
-        video.className = 'poster-trailer';
+        video.className = 'hover-snapshot-video';
         video.muted = true;
         video.playsInline = true;
         video.autoplay = true;
         video.loop = true;
-        video.src = movie.trailer_url || movie.video_url || '';
-        video.addEventListener('error', () => { try { video.remove(); } catch(e) {} });
-        el.appendChild(video);
-        // try to play
-        video.play().catch(() => {});
-    } catch (e) { }
+        video.src = movie.trailer_url || movie.video_url || movie.image_url || '';
+        video.style.width = '320px';
+        video.style.height = '180px';
+        video.style.objectFit = 'cover';
+        video.style.borderRadius = '8px';
+        video.style.boxShadow = '0 18px 40px rgba(0,0,0,0.6)';
+
+        container.appendChild(video);
+
+        // position near the element but keep within viewport
+        const rect = el.getBoundingClientRect();
+        const spaceRight = window.innerWidth - rect.right;
+        const spaceLeft = rect.left;
+        const top = Math.max(20, rect.top - 10);
+        if (spaceRight > 360) {
+            container.style.left = `${rect.right + 12}px`;
+            container.style.top = `${top}px`;
+        } else if (spaceLeft > 360) {
+            container.style.left = `${Math.max(8, rect.left - 332)}px`;
+            container.style.top = `${top}px`;
+        } else {
+            // fallback: place above centered
+            container.style.left = `${Math.max(8, rect.left + (rect.width/2) - 160)}px`;
+            container.style.top = `${Math.max(8, rect.top - 190)}px`;
+        }
+
+        video.addEventListener('error', () => { try { video.remove(); } catch(e){} });
+        video.play().catch(()=>{});
+    } catch(e) { console.warn('snapshot preview failed', e); }
 }
 
-function hideTrailerPreview(el) {
+function hideSnapshotPreview(el) {
     try {
-        const v = el.querySelector('.poster-trailer');
-        if (v) { try { v.pause(); v.remove(); } catch(e) {} }
-    } catch (e) {}
+        const container = document.getElementById('hover-snapshot-container');
+        if (container) { try { container.remove(); } catch(e) {} }
+    } catch(e) {}
 }
 
 // Settings modal + autoplay preview toggle

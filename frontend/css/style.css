@@ -648,6 +648,21 @@
 
         .poster-overlay { padding: 10px; }
 
+        /* mini-info shown on hover */
+        .mini-info { position: absolute; left: 12px; bottom: 58px; right: 12px; opacity: 0; transform: translateY(6px); transition: all 200ms ease; display: none; }
+        .poster-card:hover .mini-info { opacity: 1; transform: translateY(0); display: block; }
+        .mini-meta { color: #cfcfcf; font-size: 13px; margin-bottom: 8px; }
+        .mini-progress { height: 6px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; }
+        .mini-progress-fill { height: 100%; background: var(--netflix-red); width: 0%; transition: width 300ms ease; }
+
+        /* hover snapshot video */
+        .hover-snapshot-video { width: 320px; height: 180px; border-radius: 8px; display: block; }
+
+        /* adjust overlay-buttons visibility and layout */
+        .overlay-buttons { display: flex; gap: 8px; position: absolute; top: 10px; right: 10px; z-index: 20; opacity: 0; transform: translateY(-6px); transition: all 180ms ease; }
+        .poster-card:hover .overlay-buttons { opacity: 1; transform: translateY(0); }
+
+
 
         .poster-image {
             width: 100%;
