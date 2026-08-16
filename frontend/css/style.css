@@ -620,9 +620,10 @@
         .content-section {
             padding: 40px 4%;
             position: relative;
-            z-index: 10;
-            margin-top: 0;
-        }
+                    z-index: 6; /* slightly above hero but below modals */
+                    margin-top: 20px;
+                    background: transparent;
+                }
 
         .content-row {
             margin-bottom: 40px;
@@ -785,16 +786,20 @@
             position: fixed;
             inset: 0;
             background: rgba(0,0,0,0.8);
-            z-index: 2000;
-            display: none;
+                    z-index: 4000; /* ensure on top */
+                    display: none !important;
             align-items: center;
             justify-content: center;
             padding: 20px;
         }
 
         .modal-overlay.active {
-            display: flex;
+                    display: flex !important;
         }
+
+                /* Defensive: ensure modal content isn't visible by default even if DOM order changes */
+                #movieModal .modal-content { visibility: visible; }
+
 
         .modal-content {
             background: #1a1a1a;

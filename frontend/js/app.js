@@ -41,9 +41,16 @@ const HERO_ROTATE_MS = 8000; // 8 seconds auto-rotate
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
-            checkAuth();
-            setupEventListeners();
-        });
+                    // Defensive cleanup: hide movie modal if accidentally shown
+                    try { document.getElementById('movieModal')?.classList.remove('active'); } catch(e){}
+                    try { document.getElementById('hover-snapshot-container')?.remove(); } catch(e){}
+
+                    checkAuth();
+                    setupEventListeners();
+
+                    // ensure content section visible
+                    try { document.getElementById('contentSection').style.display = 'block'; } catch(e){}
+                });
 
         // Check Authentication
         function checkAuth() {
