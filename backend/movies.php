@@ -47,7 +47,7 @@ try {
     if ($method === 'GET') {
         if (isset($_GET['id'])) {
             $id = intval($_GET['id']);
-            $stmt = $mysqli->prepare("SELECT id, title, description, image_url, video_url, trailer_url, genre, release_year, rating, duration, cast FROM movies WHERE id = ?");
+            $stmt = $mysqli->prepare("SELECT id, title, description, image_url, video_url, trailer_url, genre, release_year, rating, duration, cast, IFNULL(featured,0) AS featured FROM movies WHERE id = ?");
             $stmt->bind_param('i', $id);
             $stmt->execute();
             $res = $stmt->get_result();
@@ -58,7 +58,7 @@ try {
             exit;
         }
 
-        $res = $mysqli->query("SELECT id, title, description, image_url, video_url, trailer_url, genre, release_year, rating, duration, cast FROM movies ORDER BY id ASC");
+        $res = $mysqli->query("SELECT id, title, description, image_url, video_url, trailer_url, genre, release_year, rating, duration, cast, IFNULL(featured,0) AS featured FROM movies ORDER BY id ASC");
         $out = [];
         while ($row = $res->fetch_assoc()) {
             $out[] = $row;
@@ -88,9 +88,10 @@ try {
         $rating = floatval($input['rating'] ?? 0);
         $duration = $mysqli->real_escape_string($input['duration'] ?? '');
         $cast = $mysqli->real_escape_string($input['cast'] ?? '');
+        $featured = intval($input['featured'] ?? 0);
 
-        $stmt = $mysqli->prepare("INSERT INTO movies (title, description, image_url, video_url, trailer_url, genre, release_year, rating, duration, cast) VALUES (?,?,?,?,?,?,?,?,?,?)");
-        $stmt->bind_param('sssssdidss', $title, $description, $image_url, $video_url, $trailer_url, $genre, $release_year, $rating, $duration, $cast);
+        $stmt = $mysqli->prepare("INSERT INTO movies (title, description, image_url, video_url, trailer_url, genre, release_year, rating, duration, cast, featured) VALUES (?,?,?,?,?,?,?,?,?,?,?)");
+        $stmt->bind_param('ssssssidssi', $title, $description, $image_url, $video_url, $trailer_url, $genre, $release_year, $rating, $duration, $cast, $featured);
         if ($stmt->execute()) {
             echo json_encode(["status"=>"success","id"=>$stmt->insert_id]);
         } else {
@@ -113,9 +114,10 @@ try {
         $rating = floatval($input['rating'] ?? 0);
         $duration = $mysqli->real_escape_string($input['duration'] ?? null);
         $cast = $mysqli->real_escape_string($input['cast'] ?? null);
+        $featured = intval($input['featured'] ?? 0);
 
-        $stmt = $mysqli->prepare("UPDATE movies SET title=?, description=?, image_url=?, video_url=?, trailer_url=?, genre=?, release_year=?, rating=?, duration=?, cast=? WHERE id=?");
-        $stmt->bind_param('sssssdidssi', $title, $description, $image_url, $video_url, $trailer_url, $genre, $release_year, $rating, $duration, $cast, $id);
+        $stmt = $mysqli->prepare("UPDATE movies SET title=?, description=?, image_url=?, video_url=?, trailer_url=?, genre=?, release_year=?, rating=?, duration=?, cast=?, featured=? WHERE id=?");
+                $stmt->bind_param('ssssssidssii', $title, $description, $image_url, $video_url, $trailer_url, $genre, $release_year, $rating, $duration, $cast, $featured, $id);
         if ($stmt->execute()) echo json_encode(["status"=>"success"]);
         else echo json_encode(["status"=>"error","message"=>$stmt->error]);
         $stmt->close();

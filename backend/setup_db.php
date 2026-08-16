@@ -23,7 +23,8 @@ CREATE TABLE IF NOT EXISTS movies (
     release_year INT,
     rating FLOAT,
     duration VARCHAR(50),
-    cast TEXT
+    cast TEXT,
+    featured TINYINT(1) DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS users (
@@ -68,9 +69,10 @@ if ($needSeed) {
         ["title"=>"Interstellar","description"=>"A team travels through space to save humanity.","image_url"=>"https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg","genre"=>"Sci-Fi","release_year"=>2014,"rating"=>8.6,"duration"=>"2h 49m","cast"=>""],
     ];
 
-    $stmt = $conn->prepare("INSERT INTO movies (title, description, image_url, video_url, trailer_url, genre, release_year, rating, duration, cast) VALUES (?,?,?,?,?,?,?,?,?,?)");
-    foreach ($movies as $m) {
-        $stmt->bind_param('sssssdidss', $m['title'], $m['description'], $m['image_url'], $m['video_url'] ?? null, $m['trailer_url'] ?? null, $m['genre'] ?? null, $m['release_year'] ?? null, $m['rating'] ?? 0, $m['duration'] ?? null, $m['cast'] ?? null);
+    $stmt = $conn->prepare("INSERT INTO movies (title, description, image_url, video_url, trailer_url, genre, release_year, rating, duration, cast, featured) VALUES (?,?,?,?,?,?,?,?,?,?,?)");
+    foreach ($movies as $idx => $m) {
+        $featured = ($idx === 0) ? 1 : 0; // mark first seeded item as featured
+        $stmt->bind_param('ssssssidssi', $m['title'], $m['description'], $m['image_url'], $m['video_url'] ?? null, $m['trailer_url'] ?? null, $m['genre'] ?? null, $m['release_year'] ?? null, $m['rating'] ?? 0, $m['duration'] ?? null, $m['cast'] ?? null, $featured);
         $stmt->execute();
     }
     $stmt->close();
