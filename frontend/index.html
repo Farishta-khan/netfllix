@@ -66,15 +66,18 @@
                         </svg>
                         <span class="notifications-badge">2</span>
                     </div>
-                    <div class="profile-menu">
-                        <img src="https://i.pravatar.cc/150?img=3" alt="Profile" class="profile-avatar" id="profileAvatar">
-                        <span id="profileName" style="margin-left:8px;color:white;font-weight:500;font-size:14px;"></span>
-                        <div class="profile-dropdown">
-                            <a href="#">Account</a>
-                            <a href="#" onclick="logout()">Sign out of Netflix</a>
-                        </div>
+                <button class="settings-btn" id="settingsBtn" onclick="openSettings()" title="Settings">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M19.14 12.936a7.5 7.5 0 0 0 0-1.872l2.036-1.58a.5.5 0 0 0 .12-.64l-1.928-3.337a.5.5 0 0 0-.607-.22l-2.4.96a7.52 7.52 0 0 0-1.62-.94l-.36-2.52A.5.5 0 0 0 13.5 2h-3a.5.5 0 0 0-.496.42l-.36 2.52a7.52 7.52 0 0 0-1.62.94l-2.4-.96a.5.5 0 0 0-.607.22L2.7 8.844a.5.5 0 0 0 .12.64l2.036 1.58a7.5 7.5 0 0 0 0 1.872l-2.036 1.58a.5.5 0 0 0-.12.64l1.928 3.337a.5.5 0 0 0 .607.22l2.4-.96c.5.38 1.04.68 1.62.94l.36 2.52A.5.5 0 0 0 10.5 22h3a.5.5 0 0 0 .496-.42l.36-2.52c.57-.26 1.12-.56 1.62-.94l2.4.96a.5.5 0 0 0 .607-.22l1.928-3.337a.5.5 0 0 0-.12-.64l-2.036-1.58zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7z"/></svg>
+                </button>
+                <div class="profile-menu">
+                    <img src="https://i.pravatar.cc/150?img=3" alt="Profile" class="profile-avatar" id="profileAvatar">
+                    <span id="profileName" style="margin-left:8px;color:white;font-weight:500;font-size:14px;"></span>
+                    <div class="profile-dropdown">
+                        <a href="#">Account</a>
+                        <a href="#" onclick="logout()">Sign out of Netflix</a>
                     </div>
                 </div>
+            </div>
             </div>
         </nav>
 
@@ -98,13 +101,13 @@
                 </div>
                 <p class="hero-description" id="heroDescription">When a young boy disappears, his mother, a police chief and his friends must confront terrifying supernatural forces in order to get him back.</p>
                 <div class="hero-buttons">
-                    <button class="hero-btn hero-btn-primary" onclick="playMovie()">
+                    <button class="hero-btn hero-btn-primary hero-anim" onclick="playMovie()">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="black">
                             <path d="M8 5v14l11-7z"/>
                         </svg>
                         Play
                     </button>
-                    <button class="hero-btn hero-btn-secondary" onclick="showMovieDetail(window.selectedMovieId)">
+                    <button class="hero-btn hero-btn-secondary hero-anim" onclick="showMovieDetail(window.selectedMovieId)">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
                             <path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
                         </svg>
@@ -181,6 +184,19 @@
                     </button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="settings-modal" aria-hidden="true">
+        <div class="settings-card">
+            <button class="modal-close" onclick="closeSettings()">×</button>
+            <h3>Settings</h3>
+            <label style="display:flex;align-items:center;gap:12px;margin-top:12px;">
+                <input type="checkbox" id="autoplayPreviewCheckbox"> Autoplay previews on hover
+            </label>
+            <p class="muted" style="margin-top:10px">Toggle poster trailer previews when hovering over posters.</p>
+            <div style="margin-top:14px"><button onclick="saveSettings()">Save</button> <button onclick="closeSettings()" style="background:#444;margin-left:8px">Close</button></div>
         </div>
     </div>
 

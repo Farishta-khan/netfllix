@@ -477,12 +477,23 @@ function escapeHtml(s) {
                     // remember hero as selected movie for quick play
                             if (!movie) return;
                             window.selectedMovieId = movie.id;
-                            document.getElementById('heroTitle').textContent = movie.title;
-                            document.getElementById('heroDescription').textContent = movie.description || '';
+                                const titleEl = document.getElementById('heroTitle');
+                                const descEl = document.getElementById('heroDescription');
+                                titleEl.textContent = movie.title;
+                                descEl.textContent = movie.description || '';
 
-                            // use heroBg image with fade for smooth crossfade
-                            try {
-                                const heroBg = document.getElementById('heroBg');
+                                // small entrance animation for hero title/description
+                                try {
+                                    titleEl.classList.remove('hero-animate');
+                                    // force reflow to restart animation
+                                    void titleEl.offsetWidth;
+                                    titleEl.classList.add('hero-animate');
+                                    setTimeout(() => titleEl.classList.remove('hero-animate'), 900);
+                                } catch(e){}
+
+                                // use heroBg image with fade for smooth crossfade
+                                try {
+                                    const heroBg = document.getElementById('heroBg');
                                 if (heroBg) {
                                     // prepare new image load
                                     heroBg.classList.remove('visible');
@@ -529,6 +540,31 @@ function escapeHtml(s) {
             heroIndex = (heroIndex - 1 + heroMovies.length) % heroMovies.length;
             updateHero(heroMovies[heroIndex]);
             localStorage.setItem('lastHeroId', heroMovies[heroIndex].id);
+        }
+
+        // Settings modal + autoplay preview toggle
+        function openSettings() {
+            const modal = document.getElementById('settingsModal');
+            if (!modal) return;
+            loadSettings();
+            modal.style.display = 'flex';
+            modal.setAttribute('aria-hidden', 'false');
+        }
+        function closeSettings() {
+            const modal = document.getElementById('settingsModal');
+            if (!modal) return;
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+        }
+        function loadSettings() {
+            const v = localStorage.getItem('autoplay_preview');
+            const cb = document.getElementById('autoplayPreviewCheckbox');
+            if (cb) cb.checked = (v === null) ? true : (v === 'true');
+        }
+        function saveSettings() {
+            const cb = document.getElementById('autoplayPreviewCheckbox');
+            if (cb) localStorage.setItem('autoplay_preview', cb.checked ? 'true' : 'false');
+            closeSettings();
         }
 
         function startHeroAutoRotate() {
@@ -805,6 +841,9 @@ function showTrailerPreview(movieId, el) {
     try {
         const movie = allMovies.find(m => m.id === movieId);
         if (!movie) return;
+        // respect user setting for autoplay previews
+        const autoplay = localStorage.getItem('autoplay_preview');
+        if (autoplay === 'false') return;
         // avoid duplicating
         if (el.querySelector('.poster-trailer')) return;
         const video = document.createElement('video');
@@ -826,6 +865,31 @@ function hideTrailerPreview(el) {
         const v = el.querySelector('.poster-trailer');
         if (v) { try { v.pause(); v.remove(); } catch(e) {} }
     } catch (e) {}
+}
+
+// Settings modal + autoplay preview toggle
+function openSettings() {
+    const modal = document.getElementById('settingsModal');
+    if (!modal) return;
+    loadSettings();
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+}
+function closeSettings() {
+    const modal = document.getElementById('settingsModal');
+    if (!modal) return;
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+}
+function loadSettings() {
+    const v = localStorage.getItem('autoplay_preview');
+    const cb = document.getElementById('autoplayPreviewCheckbox');
+    if (cb) cb.checked = (v === null) ? true : (v === 'true');
+}
+function saveSettings() {
+    const cb = document.getElementById('autoplayPreviewCheckbox');
+    if (cb) localStorage.setItem('autoplay_preview', cb.checked ? 'true' : 'false');
+    closeSettings();
 }
 
 // Toggle mute for large player
