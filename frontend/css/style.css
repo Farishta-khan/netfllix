@@ -899,3 +899,47 @@ section {
 .auth-container.active {
     pointer-events: all;
 }
+
+/* Video Player Overlay */
+#videoPlayer {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.95);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+}
+
+#videoPlayer.active {
+    display: flex;
+}
+
+#videoPlayer .video-wrapper {
+    max-width: 1000px;
+    width: 100%;
+    padding: 20px;
+}
+
+#videoPlayer video {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    background: black;
+}
+
+#videoPlayer .video-close {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 32px;
+    cursor: pointer;
+}
+
+/* Prevent body scroll when modal or player open */
+.no-scroll {
+    overflow: hidden;
+}
