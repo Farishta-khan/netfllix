@@ -17,16 +17,26 @@ $moviesData = [];
 
 $conn = @new mysqli($dbHost, $dbUser, $dbPass, $dbName);
 if ($conn && $conn->connect_errno === 0) {
-    $useDb = true;
-    $res = $conn->query("SELECT id, title, description, image_url, video_url, genre, release_year, rating, duration, cast, trailer_url FROM movies ORDER BY id ASC");
-    if ($res) {
-        while ($row = $res->fetch_assoc()) {
-            $row['rating'] = floatval($row['rating']);
-            $row['release_year'] = $row['release_year'] ? intval($row['release_year']) : null;
-            $moviesData[] = $row;
+    // Attempt to read from DB, but be resilient to schema differences (missing columns)
+    try {
+        $useDb = true;
+        $res = $conn->query("SELECT id, title, description, image_url, video_url, genre, release_year, rating, duration, cast, trailer_url FROM movies ORDER BY id ASC");
+        if ($res) {
+            while ($row = $res->fetch_assoc()) {
+                // normalize fields that may be missing
+                if (!isset($row['rating'])) $row['rating'] = 0;
+                if (!isset($row['release_year'])) $row['release_year'] = null;
+                $row['rating'] = floatval($row['rating']);
+                $row['release_year'] = $row['release_year'] ? intval($row['release_year']) : null;
+                $moviesData[] = $row;
+            }
+            $res->free();
         }
-        $res->free();
+    } catch (mysqli_sql_exception $e) {
+        // Schema mismatch or other SQL error - fall back to static list below
+        $useDb = false;
     }
+
     $conn->close();
 }
 
