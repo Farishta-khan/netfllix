@@ -81,6 +81,7 @@
         <!-- Hero Section -->
         <div class="hero" id="hero">
             <div class="hero-overlay"></div>
+            <img id="heroBg" class="hero-bg" src="" alt="">
 
             <!-- carousel controls -->
             <button class="hero-control hero-prev" aria-label="Previous" onclick="prevHero()">‹</button>
@@ -186,6 +187,7 @@
     <!-- Video Player Overlay -->
     <div id="videoPlayer" class="video-overlay" aria-hidden="true">
         <button class="video-close" onclick="closeVideoPlayer()" aria-label="Close video">×</button>
+        <button class="video-mute" id="videoMuteBtn" onclick="toggleMute()" aria-label="Mute/Unmute">🔇</button>
         <div class="video-wrapper">
             <video id="videoPlayerTag" controls crossorigin playsinline></video>
         </div>

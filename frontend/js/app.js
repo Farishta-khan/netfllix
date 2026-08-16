@@ -16,6 +16,28 @@ let heroIndex = 0;
 let heroTimer = null;
 const HERO_ROTATE_MS = 8000; // 8 seconds auto-rotate
 
+                // Continue watching demo progress key
+                const WATCH_PROGRESS_KEY = 'watch_progress';
+
+                // Keyboard handling for player
+                document.addEventListener('keydown', (e) => {
+                    const overlay = document.getElementById('videoPlayer');
+                    if (!overlay || !overlay.classList.contains('active')) return;
+                    const videoEl = document.getElementById('videoPlayerTag');
+                    if (!videoEl) return;
+
+                    if (e.code === 'Space') {
+                        e.preventDefault();
+                        if (videoEl.paused) videoEl.play(); else videoEl.pause();
+                    } else if (e.key === 'm' || e.key === 'M') {
+                        toggleMute();
+                    } else if (e.key === 'ArrowLeft') {
+                        videoEl.currentTime = Math.max(0, videoEl.currentTime - 10);
+                    } else if (e.key === 'ArrowRight') {
+                        videoEl.currentTime = Math.min(videoEl.duration || 0, videoEl.currentTime + 10);
+                    }
+                });
+
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
@@ -377,8 +399,12 @@ function getSampleMovies() {
             const contentSection = document.getElementById('contentSection');
             let html = '';
 
-            // Trending Now
-            html += createContentRow('Trending Now', allMovies.slice(0, 10));
+                    // Continue Watching (if any)
+                    const continueRow = renderContinueWatchingRow();
+                    if (continueRow) html += continueRow;
+
+                    // Trending Now
+                    html += createContentRow('Trending Now', allMovies.slice(0, 10));
             
             // Popular on Netflix
             html += createContentRow('Popular on Netflix', allMovies.slice(5, 15));
@@ -402,7 +428,7 @@ function createContentRow(title, movies) {
     const limitedMovies = movies.slice(0, 8);
 
     let posters = limitedMovies.map(movie => `
-        <div class="poster-card ${isFavorite(movie.id) ? 'favorited' : ''}" data-id="${movie.id}">
+        <div class="poster-card ${isFavorite(movie.id) ? 'favorited' : ''}" data-id="${movie.id}" tabindex="0" onmouseenter="showTrailerPreview(${movie.id}, this)" onmouseleave="hideTrailerPreview(this)" onclick="showMovieDetail(${movie.id})">
             <img src="${movie.image_url}" 
                  loading="lazy"
                  referrerpolicy="no-referrer"
@@ -447,7 +473,24 @@ function escapeHtml(s) {
                             window.selectedMovieId = movie.id;
                             document.getElementById('heroTitle').textContent = movie.title;
                             document.getElementById('heroDescription').textContent = movie.description || '';
-                            document.getElementById('hero').style.background = `url('${movie.image_url}') center/cover`;
+
+                            // use heroBg image with fade for smooth crossfade
+                            try {
+                                const heroBg = document.getElementById('heroBg');
+                                if (heroBg) {
+                                    // prepare new image load
+                                    heroBg.classList.remove('visible');
+                                    // small timeout to allow opacity transition
+                                    setTimeout(() => {
+                                        heroBg.src = movie.image_url;
+                                    }, 50);
+                                    heroBg.onload = () => { heroBg.classList.add('visible'); };
+                                } else {
+                                    document.getElementById('hero').style.background = `url('${movie.image_url}') center/cover`;
+                                }
+                            } catch (err) {
+                                document.getElementById('hero').style.background = `url('${movie.image_url}') center/cover`;
+                            }
 
                             // update indicators
                             try {
@@ -519,6 +562,9 @@ function showMovieDetail(id) {
         `Cast: ${movie.cast || 'Not available'}`;
 
     document.getElementById('movieModal').classList.add('active');
+
+    // seed demo watch progress for continue-watching
+    seedDemoProgressIfNeeded();
 }
 
         function closeModal() {
@@ -537,23 +583,38 @@ function showMovieDetail(id) {
             const overlay = document.getElementById('videoPlayer');
             const videoEl = document.getElementById('videoPlayerTag');
             videoEl.src = movie.video_url;
-            videoEl.play().catch(() => {});
-            overlay.classList.add('active');
-            overlay.setAttribute('aria-hidden', 'false');
-            document.body.classList.add('no-scroll');
-        }
+                    videoEl.muted = false;
+                    videoEl.currentTime = 0;
+                    videoEl.play().catch(() => {});
+                    overlay.classList.add('active');
+                    overlay.setAttribute('aria-hidden', 'false');
+                    document.body.classList.add('no-scroll');
+
+                    // update mute button state
+                    try {
+                        const muteBtn = document.getElementById('videoMuteBtn');
+                        if (muteBtn) muteBtn.textContent = videoEl.muted ? '🔇' : '🔊';
+                    } catch (e) {}
+
+                    // track as recently watched (seed progress if not present)
+                    markAsWatched(movieId, 0.05); // 5% when started
+                }
 
         function closeVideoPlayer() {
             const overlay = document.getElementById('videoPlayer');
             const videoEl = document.getElementById('videoPlayerTag');
             if (videoEl) {
-                try { videoEl.pause(); } catch(e) {}
-                videoEl.removeAttribute('src');
-            }
-            overlay.classList.remove('active');
-            overlay.setAttribute('aria-hidden', 'true');
-            document.body.classList.remove('no-scroll');
-        }
+                        try { 
+                            // persist progress for continue watching
+                            try { markAsWatched(window.selectedMovieId, (videoEl.currentTime / (videoEl.duration || 1))); } catch(e) {}
+                            videoEl.pause(); 
+                        } catch(e) {}
+                        videoEl.removeAttribute('src');
+                    }
+                    overlay.classList.remove('active');
+                    overlay.setAttribute('aria-hidden', 'true');
+                    document.body.classList.remove('no-scroll');
+                }
 
         function goHome() {
             window.scrollTo(0, 0);
@@ -733,6 +794,44 @@ function isFavorite(movieId) {
     return favoritesSet.has(movieId);
 }
 
+// Trailer preview on hover
+function showTrailerPreview(movieId, el) {
+    try {
+        const movie = allMovies.find(m => m.id === movieId);
+        if (!movie) return;
+        // avoid duplicating
+        if (el.querySelector('.poster-trailer')) return;
+        const video = document.createElement('video');
+        video.className = 'poster-trailer';
+        video.muted = true;
+        video.playsInline = true;
+        video.autoplay = true;
+        video.loop = true;
+        video.src = movie.trailer_url || movie.video_url || '';
+        video.addEventListener('error', () => { try { video.remove(); } catch(e) {} });
+        el.appendChild(video);
+        // try to play
+        video.play().catch(() => {});
+    } catch (e) { }
+}
+
+function hideTrailerPreview(el) {
+    try {
+        const v = el.querySelector('.poster-trailer');
+        if (v) { try { v.pause(); v.remove(); } catch(e) {} }
+    } catch (e) {}
+}
+
+// Toggle mute for large player
+function toggleMute() {
+    const videoEl = document.getElementById('videoPlayerTag');
+    if (!videoEl) return;
+    videoEl.muted = !videoEl.muted;
+    const muteBtn = document.getElementById('videoMuteBtn');
+    if (muteBtn) muteBtn.textContent = videoEl.muted ? '🔇' : '🔊';
+}
+
+
 function loadFavorites() {
     favoritesSet = new Set();
     const token = localStorage.getItem('netflix_token');
@@ -753,7 +852,69 @@ function loadFavorites() {
         const saved = JSON.parse(localStorage.getItem('my_list') || '[]');
         saved.forEach(m => favoritesSet.add(m.id));
     }
+
+    // also load continue-watching seed
+    seedDemoProgressIfNeeded();
 }
+
+// Continue-watching helpers
+function seedDemoProgressIfNeeded() {
+    try {
+        const existing = JSON.parse(localStorage.getItem(WATCH_PROGRESS_KEY) || '[]');
+        if (existing && existing.length > 0) return;
+        // seed with a couple of items
+        const seed = [];
+        if (allMovies.length > 1) seed.push({ id: allMovies[0].id, progress: 0.42 });
+        if (allMovies.length > 3) seed.push({ id: allMovies[3].id, progress: 0.67 });
+        if (seed.length) localStorage.setItem(WATCH_PROGRESS_KEY, JSON.stringify(seed));
+    } catch (e) {}
+}
+
+function markAsWatched(movieId, ratio) {
+    if (!movieId) return;
+    try {
+        const arr = JSON.parse(localStorage.getItem(WATCH_PROGRESS_KEY) || '[]');
+        const idx = arr.findIndex(x => x.id === movieId);
+        const value = Math.max(0, Math.min(1, Number(ratio) || 0));
+        if (idx >= 0) { arr[idx].progress = value; } else { arr.unshift({ id: movieId, progress: value }); }
+        // keep only latest 6
+        localStorage.setItem(WATCH_PROGRESS_KEY, JSON.stringify(arr.slice(0,6)));
+        renderContent();
+    } catch (e) {}
+}
+
+function renderContinueWatchingRow() {
+    try {
+        const arr = JSON.parse(localStorage.getItem(WATCH_PROGRESS_KEY) || '[]');
+        if (!arr || arr.length === 0) return '';
+        const movies = arr.map(item => {
+            const m = allMovies.find(mm => String(mm.id) === String(item.id));
+            return m ? { ...m, progress: item.progress } : null;
+        }).filter(Boolean);
+        if (movies.length === 0) return '';
+
+        const items = movies.map(m => `
+            <div class="continue-card" onclick="playMovie(${m.id})">
+                <img class="continue-thumb" src="${m.image_url}" onerror="this.src='https://via.placeholder.com/140x78?text=No+Image'" alt="${escapeHtml(m.title)}">
+                <div class="progress-wrap">
+                    <div style="font-weight:600">${escapeHtml(m.title)}</div>
+                    <div class="progress-bar"><div class="progress-fill" style="width:${Math.round((m.progress||0)*100)}%"></div></div>
+                    <div class="progress-meta">${Math.round((m.progress||0)*100)}% watched</div>
+                </div>
+            </div>
+        `).join('');
+
+        return `
+            <div class="content-row continue-row">
+                <div class="row-header"><h2 class="row-title">Continue Watching</h2></div>
+                <div class="row-posters">
+                    ${items}
+                </div>
+            </div>
+        `;
+    } catch (e) { return ''; }
+}
+
 
 // duplicate closeModal removed (handled earlier)
 
