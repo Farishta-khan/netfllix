@@ -91,8 +91,13 @@ async function handleAuth(e) {
         let data = await res.json();
 
         if (data.status === "success") {
+            // store user and JWT (if returned)
             localStorage.setItem("netflix_user", JSON.stringify(data.user || data));
-            localStorage.setItem("netflix_token", "demo");
+            if (data.token) {
+                localStorage.setItem("netflix_token", data.token);
+            } else {
+                localStorage.setItem("netflix_token", "demo");
+            }
 
             closeAuthModal();
             showApp();
@@ -125,8 +130,12 @@ if (!isLogin) {
     let data = await res.json();
 
     if (data.status === "success") {
-        alert("Account created successfully. Please sign in.");
-        closeAuthModal(); // close after signup
+        // Auto-login after signup: store user and token if provided
+        if (data.user) localStorage.setItem('netflix_user', JSON.stringify(data.user));
+        if (data.token) localStorage.setItem('netflix_token', data.token);
+
+        closeAuthModal();
+        showApp();
     } else {
         showError(data.message || "Signup failed");
     }
@@ -396,14 +405,19 @@ function createContentRow(title, movies) {
     `;
 }
         function updateHero(movie) {
-            document.getElementById('heroTitle').textContent = movie.title;
-            document.getElementById('heroDescription').textContent = movie.description;
-            document.getElementById('hero').style.background = `url('${movie.image_url}') center/cover`;
-        }
+                    // remember hero as selected movie for quick play
+                    window.selectedMovieId = movie.id;
+                    document.getElementById('heroTitle').textContent = movie.title;
+                    document.getElementById('heroDescription').textContent = movie.description;
+                    document.getElementById('hero').style.background = `url('${movie.image_url}') center/cover`;
+                }
 
 function showMovieDetail(id) {
     const movie = allMovies.find(m => m.id === id);
     if (!movie) return;
+
+    // remember selected movie for player
+    window.selectedMovieId = id;
 
     document.getElementById('modalTitle').textContent = movie.title;
     document.getElementById('modalImage').src = movie.image_url;
@@ -425,10 +439,36 @@ function showMovieDetail(id) {
 
         function closeModal() {
             document.getElementById('movieModal').classList.remove('active');
+            document.body.classList.remove('no-scroll');
         }
 
-        function playMovie() {
-            alert('Playing movie... In production, this would open a video player.');
+        function playMovie(id) {
+            // id optional - if provided, play that movie; otherwise use last selected
+            if (id) window.selectedMovieId = id;
+            const movieId = window.selectedMovieId;
+            const movie = allMovies.find(m => m.id === movieId);
+            if (!movie) return alert('Movie not found');
+            if (!movie.video_url) return alert('Video stream not available for this title.');
+
+            const overlay = document.getElementById('videoPlayer');
+            const videoEl = document.getElementById('videoPlayerTag');
+            videoEl.src = movie.video_url;
+            videoEl.play().catch(() => {});
+            overlay.classList.add('active');
+            overlay.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('no-scroll');
+        }
+
+        function closeVideoPlayer() {
+            const overlay = document.getElementById('videoPlayer');
+            const videoEl = document.getElementById('videoPlayerTag');
+            if (videoEl) {
+                try { videoEl.pause(); } catch(e) {}
+                videoEl.removeAttribute('src');
+            }
+            overlay.classList.remove('active');
+            overlay.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('no-scroll');
         }
 
         function goHome() {
@@ -497,39 +537,78 @@ function scrollToSection(id) {
 
 
 function showMyList() {
-    if (!currentUser) {
-        showAuthModal('login');
-        return;
-    }
-
-    const saved = JSON.parse(localStorage.getItem('my_list') || '[]');
-
     const container = document.getElementById('contentSection');
 
-    if (saved.length === 0) {
-        container.innerHTML = "<h2 style='color:white;padding:20px;'>Your My List is empty</h2>";
+    // If user not logged in, fallback to client-side list
+    const token = localStorage.getItem('netflix_token');
+    if (!token || !localStorage.getItem('netflix_user')) {
+        const saved = JSON.parse(localStorage.getItem('my_list') || '[]');
+        if (saved.length === 0) {
+            container.innerHTML = "<h2 style='color:white;padding:20px;'>Your My List is empty</h2>";
+            return;
+        }
+        container.innerHTML = createContentRow("My List", saved);
         return;
     }
 
-    container.innerHTML = createContentRow("My List", saved);
+    // Fetch server-side favorites
+    fetch('../backend/favorites.php', {
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + token
+        }
+    }).then(r => r.json()).then(data => {
+        if (data.status === 'success') {
+            const list = data.data || [];
+            if (list.length === 0) {
+                container.innerHTML = "<h2 style='color:white;padding:20px;'>Your My List is empty</h2>";
+                return;
+            }
+            container.innerHTML = createContentRow("My List", list);
+        } else {
+            container.innerHTML = "<h2 style='color:white;padding:20px;'>Your My List is empty</h2>";
+        }
+    }).catch(() => {
+        container.innerHTML = "<h2 style='color:white;padding:20px;'>Unable to load My List</h2>";
+    });
 }
 
 function addToMyList(movieId) {
     const movie = allMovies.find(m => m.id === movieId);
     if (!movie) return;
 
-    let list = JSON.parse(localStorage.getItem('my_list') || '[]');
+    const token = localStorage.getItem('netflix_token');
+    const user = localStorage.getItem('netflix_user');
+    // If logged in with token, add server-side
+    if (token && user) {
+        fetch('../backend/favorites.php', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ movie_id: movieId })
+        }).then(r => r.json()).then(data => {
+            if (data.status === 'success') {
+                // optional: feedback
+                console.log('Added to My List (server)');
+            } else {
+                console.warn('Could not add to My List', data.message);
+            }
+        }).catch(err => console.warn('Add to My List failed', err));
+        return;
+    }
 
+    // fallback to localStorage
+    let list = JSON.parse(localStorage.getItem('my_list') || '[]');
     if (!list.some(m => m.id === movieId)) {
         list.push(movie);
         localStorage.setItem('my_list', JSON.stringify(list));
     }
 }
 
-function closeModal() {
-    document.getElementById('movieModal').classList.remove('active');
-    document.body.classList.remove('no-scroll');
-}
+// duplicate closeModal removed (handled earlier)
+
 function showSection(section, el) {
     document.querySelectorAll('.section').forEach(sec => {
         sec.style.display = 'none';

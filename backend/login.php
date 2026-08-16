@@ -1,5 +1,6 @@
 <?php
 include "db.php";
+include "jwt.php";
 
 header("Content-Type: application/json");
 
@@ -11,7 +12,7 @@ if (!$email || !$password) {
     exit;
 }
 
-$stmt = $conn->prepare("SELECT * FROM users WHERE email=?");
+$stmt = $conn->prepare("SELECT id, email, password FROM users WHERE email=?");
 $stmt->bind_param("s", $email);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -23,13 +24,20 @@ if ($result->num_rows === 0) {
 
 $user = $result->fetch_assoc();
 
-if ($password !== $user['password']) {
+// verify hashed password
+if (!password_verify($password, $user['password'])) {
     echo json_encode(["status" => "error", "message" => "Wrong password"]);
     exit;
 }
 
+// prepare response: remove password & attach token
+$uid = $user['id'];
+unset($user['password']);
+$token = jwt_encode(["id" => $uid, "email" => $user['email']], 604800); // 7 days
+
 echo json_encode([
     "status" => "success",
-    "user" => $user
+    "user" => $user,
+    "token" => $token
 ]);
 ?>
