@@ -376,8 +376,14 @@ function getSampleMovies() {
         function renderContent() {
             // Setup hero carousel with featured movies
             if (allMovies.length > 0) {
-                // pick top 6 (or fewer) as featured
-                heroMovies = allMovies.slice(0, Math.min(6, allMovies.length));
+                // choose hero movies: prefer featured flag, then fill with top items up to 6
+                const featured = allMovies.filter(m => m.featured == 1 || m.featured === true || String(m.featured) === '1');
+                if (featured.length > 0) {
+                    const others = allMovies.filter(m => !(m.featured == 1 || m.featured === true || String(m.featured) === '1'));
+                    heroMovies = featured.concat(others.slice(0, Math.max(0, 6 - featured.length))).slice(0, Math.min(6, allMovies.length));
+                } else {
+                    heroMovies = allMovies.slice(0, Math.min(6, allMovies.length));
+                }
 
                 // try to resume last hero index if available
                 let lastHeroId = localStorage.getItem('lastHeroId');
