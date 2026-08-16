@@ -425,6 +425,16 @@ function getSampleMovies() {
                 // start auto-rotate
                 stopHeroAutoRotate();
                 startHeroAutoRotate();
+
+                // ensure content rows are positioned below the hero
+                try {
+                    const contentSectionTmp = document.getElementById('contentSection');
+                    const heroEl = document.getElementById('hero');
+                    if (contentSectionTmp && heroEl) {
+                        // add a small gap
+                        contentSectionTmp.style.marginTop = (heroEl.offsetHeight + 24) + 'px';
+                    }
+                } catch(e) {}
             }
             // Render content rows
             const contentSection = document.getElementById('contentSection');
@@ -640,6 +650,17 @@ function showMovieDetail(id) {
     // ✅ FIX: fallback cast
     document.getElementById('modalCast').textContent =
         `Cast: ${movie.cast || 'Not available'}`;
+
+    // Do not overwrite the marketing headline in the hero; keep it static
+    // Update hero background image to the selected movie's poster so hero remains visually tied to featured content
+    try {
+        const heroBg = document.getElementById('heroBg');
+        if (heroBg && movie.image_url) {
+            heroBg.classList.remove('visible');
+            setTimeout(() => { heroBg.src = movie.image_url; }, 50);
+            heroBg.onload = () => heroBg.classList.add('visible');
+        }
+    } catch(e) {}
 
     document.getElementById('movieModal').classList.add('active');
 
