@@ -2,7 +2,40 @@
 header("Content-Type: application/json");
 header("Access-Control-Allow-Origin: *");
 
-// Your custom movies with ALL details (added video_url for demo streaming)
+// Prefer reading movies from DB if available (configured via backend/config.php)
+$dbHost = 'localhost'; $dbUser = 'root'; $dbPass = ''; $dbName = 'netflixx';
+if (file_exists(__DIR__ . '/config.php')) {
+    include_once __DIR__ . '/config.php';
+    if (defined('DB_HOST')) $dbHost = DB_HOST;
+    if (defined('DB_USER')) $dbUser = DB_USER;
+    if (defined('DB_PASS')) $dbPass = DB_PASS;
+    if (defined('DB_NAME')) $dbName = DB_NAME;
+}
+
+$useDb = false;
+$moviesData = [];
+
+$conn = @new mysqli($dbHost, $dbUser, $dbPass, $dbName);
+if ($conn && $conn->connect_errno === 0) {
+    $useDb = true;
+    $res = $conn->query("SELECT id, title, description, image_url, video_url, genre, release_year, rating, duration, cast, trailer_url FROM movies ORDER BY id ASC");
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $row['rating'] = floatval($row['rating']);
+            $row['release_year'] = $row['release_year'] ? intval($row['release_year']) : null;
+            $moviesData[] = $row;
+        }
+        $res->free();
+    }
+    $conn->close();
+}
+
+if ($useDb && count($moviesData) > 0) {
+    echo json_encode(["status" => "success", "data" => $moviesData]);
+    exit;
+}
+
+// Fallback to static list if DB not available or empty
 $movies = json_encode([
     "status" => "success",
     "data" => [
@@ -12,7 +45,6 @@ $movies = json_encode([
         ["id" => 4, "title" => "Breaking Bad", "image_url" => "https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg", "genre" => "Crime", "release_year" => 2008, "rating" => 9.5, "duration" => "5 Seasons", "description" => "A chemistry teacher turns into a drug kingpin."],
         ["id" => 5, "title" => "The Witcher", "image_url" => "https://image.tmdb.org/t/p/w500/7vjaCdMw15FEbXyLQTVa04URsPm.jpg", "genre" => "Action", "release_year" => 2019, "rating" => 8.2, "duration" => "3 Seasons", "description" => "A monster hunter struggles to find his place in a brutal world."],
         ["id" => 6, "title" => "Inception", "image_url" => "https://image.tmdb.org/t/p/w500/edv5CZvWj09upOsy2Y6IwDhK8bt.jpg", "video_url" => "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4", "genre" => "Sci-Fi", "release_year" => 2010, "rating" => 8.8, "duration" => "2h 28m", "description" => "A thief enters dreams to steal secrets and plant ideas."],
-        // rest unchanged but kept for brevity; some items intentionally lack video_url
         ["id" => 7, "title" => "The Dark Knight", "image_url" => "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg", "genre" => "Action", "release_year" => 2008, "rating" => 9.0, "duration" => "2h 32m", "description" => "Batman faces the Joker in a battle for Gotham's soul."],
         ["id" => 8, "title" => "Interstellar", "image_url" => "https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg", "genre" => "Sci-Fi", "release_year" => 2014, "rating" => 8.6, "duration" => "2h 49m", "description" => "A team travels through space to save humanity."],
         ["id" => 9, "title" => "Avengers: Endgame", "image_url" => "https://image.tmdb.org/t/p/w500/or06FN3Dka5tukK1e9sl16pB3iy.jpg", "genre" => "Action", "release_year" => 2019, "rating" => 8.4, "duration" => "3h", "description" => "The Avengers unite to undo the damage caused by Thanos."],

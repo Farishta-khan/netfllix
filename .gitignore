@@ -1,0 +1,18 @@
+# Ignore local backend config with secrets
+backend/config.php
+
+# Node / OS / Editor
+node_modules/
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Logs
+logs/
+*.log
+
+# IDE files
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
